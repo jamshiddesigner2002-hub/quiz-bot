@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quiz Kiss 💋</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+
+        <!-- ═══ Главная ═══ -->
+        <div id="screen-home" class="screen active">
+            <div class="home-container">
+                <div class="logo">
+                    <div class="logo-kiss">💋</div>
+                    <h1 class="logo-title">Quiz Kiss</h1>
+                    <p class="logo-sub">Создавай тесты · проверяй друзей</p>
+                </div>
+                <div class="home-actions">
+                    <button class="card-btn" onclick="showScreen('create')">
+                        <span class="card-btn-icon">📝</span>
+                        <div class="card-btn-info">
+                            <span class="card-btn-title">Создать тест</span>
+                            <span class="card-btn-desc">Добавь вопросы с фото</span>
+                        </div>
+                        <span class="card-btn-arrow">→</span>
+                    </button>
+                    <button class="card-btn" onclick="showScreen('code')">
+                        <span class="card-btn-icon">🎯</span>
+                        <div class="card-btn-info">
+                            <span class="card-btn-title">Пройти тест</span>
+                            <span class="card-btn-desc">Введи код от друга</span>
+                        </div>
+                        <span class="card-btn-arrow">→</span>
+                    </button>
+                    <button class="card-btn secondary" onclick="loadMyQuizzes()">
+                        <span class="card-btn-icon">📋</span>
+                        <div class="card-btn-info">
+                            <span class="card-btn-title">Мои тесты</span>
+                        </div>
+                        <span class="card-btn-arrow">→</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ Создание теста — название ═══ -->
+        <div id="screen-create" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" onclick="showScreen('home')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <h2>Новый тест</h2>
+                <div class="header-spacer"></div>
+            </div>
+            <div class="screen-body">
+                <div class="create-hero">
+                    <span class="create-hero-emoji">✨</span>
+                    <p>Придумайте название для вашего теста</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Название</label>
+                    <input type="text" id="quiz-title" class="input" placeholder="Например: Столицы мира" maxlength="100">
+                </div>
+                <button class="btn btn-primary full-width" onclick="createQuiz()">
+                    Далее <span class="btn-arrow">→</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ═══ Добавление вопросов ═══ -->
+        <div id="screen-questions" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" onclick="confirmBack()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <h2>Вопрос <span id="q-number">1</span></h2>
+                <div class="header-spacer"></div>
+            </div>
+            <div class="screen-body">
+                <!-- Текст вопроса -->
+                <div class="form-group">
+                    <label class="form-label">Текст вопроса</label>
+                    <textarea id="q-text" class="input textarea" placeholder="Введите вопрос..." rows="3"></textarea>
+                </div>
+
+                <!-- Фото -->
+                <div class="form-group">
+                    <label class="form-label">Фото <span class="optional">(необязательно)</span></label>
+                    <div class="file-upload" id="photo-upload" onclick="document.getElementById('q-photo').click()">
+                        <input type="file" id="q-photo" accept="image/*" hidden>
+                        <div class="file-upload-placeholder" id="upload-placeholder">
+                            <span class="file-upload-icon">📸</span>
+                            <span class="file-upload-text">Нажмите для загрузки фото</span>
+                        </div>
+                        <img id="photo-preview" class="photo-preview" hidden>
+                    </div>
+                    <button class="btn btn-ghost btn-small remove-photo-btn" id="remove-photo-btn" hidden onclick="removePhoto(event)">✕ Убрать фото</button>
+                </div>
+
+                <!-- Варианты ответов -->
+                <div class="form-group">
+                    <label class="form-label">Варианты ответов</label>
+                    <p class="form-hint">Нажмите <span class="correct-marker-demo">●</span> чтобы отметить правильный</p>
+                    <div id="options-container"></div>
+                    <button class="btn btn-ghost btn-small" onclick="addOption()">+ Добавить вариант</button>
+                </div>
+
+                <!-- Кнопки -->
+                <div class="actions-row">
+                    <button class="btn btn-secondary" onclick="saveAndAddMore()">+ Ещё вопрос</button>
+                    <button class="btn btn-primary" onclick="saveAndFinish()">Завершить ✓</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ Тест создан ═══ -->
+        <div id="screen-created" class="screen">
+            <div class="screen-body center-content">
+                <div class="success-check">
+                    <svg class="checkmark" viewBox="0 0 52 52">
+                        <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                        <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                    </svg>
+                </div>
+                <h2 class="created-title">Тест готов! 🎉</h2>
+                <p class="created-subtitle" id="created-quiz-title"></p>
+                <div class="code-card">
+                    <span class="code-label">Код теста</span>
+                    <span class="code-value" id="created-code"></span>
+                </div>
+                <div class="share-row">
+                    <input type="text" id="share-link" class="input share-input" readonly>
+                    <button class="btn btn-icon" onclick="copyLink()" id="copy-btn" title="Копировать">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="2"/></svg>
+                    </button>
+                </div>
+                <button class="btn btn-primary full-width" onclick="shareQuiz()">📤 Поделиться с другом</button>
+                <button class="btn btn-ghost full-width" onclick="showScreen('home')">На главную</button>
+            </div>
+        </div>
+
+        <!-- ═══ Ввод кода ═══ -->
+        <div id="screen-code" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" onclick="showScreen('home')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <h2>Пройти тест</h2>
+                <div class="header-spacer"></div>
+            </div>
+            <div class="screen-body center-content">
+                <div class="code-hero">
+                    <span class="code-hero-emoji">🎯</span>
+                    <p>Введите код теста от друга</p>
+                </div>
+                <input type="text" id="quiz-code" class="input code-input" placeholder="ABCD12" maxlength="6" autocapitalize="characters" spellcheck="false">
+                <button class="btn btn-primary full-width" onclick="loadQuiz()">Начать</button>
+            </div>
+        </div>
+
+        <!-- ═══ Прохождение теста ═══ -->
+        <div id="screen-play" class="screen">
+            <div class="play-header">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="play-stats">
+                    <span class="play-counter" id="play-counter">1 / 10</span>
+                    <span class="kiss-badge">💋 <span id="kiss-count">0</span></span>
+                </div>
+            </div>
+            <div class="screen-body">
+                <div class="question-card" id="question-card">
+                    <img id="play-photo" class="question-photo" hidden>
+                    <p class="question-text" id="question-text"></p>
+                </div>
+                <div class="options-list" id="play-options"></div>
+            </div>
+        </div>
+
+        <!-- ═══ Ответ (feedback overlay) ═══ -->
+        <div id="answer-overlay" class="overlay" hidden>
+            <div class="overlay-content" id="overlay-content"></div>
+        </div>
+
+        <!-- ═══ Результаты ═══ -->
+        <div id="screen-results" class="screen">
+            <div class="screen-body center-content">
+                <div class="result-ring" id="result-ring">
+                    <svg viewBox="0 0 120 120" class="result-svg">
+                        <circle class="result-track" cx="60" cy="60" r="52"/>
+                        <circle class="result-progress" id="result-circle" cx="60" cy="60" r="52"/>
+                    </svg>
+                    <div class="result-inner">
+                        <span class="result-score" id="result-score">0</span>
+                        <span class="result-total" id="result-total">/ 0</span>
+                    </div>
+                </div>
+                <h2 class="result-title" id="result-title"></h2>
+                <div class="result-stats">
+                    <div class="result-stat correct">
+                        <span class="result-stat-num" id="result-correct">0</span>
+                        <span class="result-stat-label">✅ Правильно</span>
+                    </div>
+                    <div class="result-stat wrong">
+                        <span class="result-stat-num" id="result-wrong">0</span>
+                        <span class="result-stat-label">❌ Ошибки</span>
+                    </div>
+                </div>
+                <div class="kiss-result-card" id="kiss-result-card" hidden>
+                    <div class="kiss-result-row">
+                        <span class="kiss-big-icon">💋</span>
+                        <span class="kiss-big-count" id="result-kisses">0</span>
+                    </div>
+                    <p class="kiss-result-text" id="kiss-result-text"></p>
+                </div>
+                <button class="btn btn-primary full-width" onclick="showScreen('home')">На главную</button>
+            </div>
+        </div>
+
+        <!-- ═══ Мои тесты ═══ -->
+        <div id="screen-my" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" onclick="showScreen('home')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <h2>Мои тесты</h2>
+                <div class="header-spacer"></div>
+            </div>
+            <div class="screen-body">
+                <div id="my-quizzes-list" class="quizzes-list"></div>
+            </div>
+        </div>
+
+        <!-- ═══ Загрузка ═══ -->
+        <div id="screen-loading" class="screen">
+            <div class="screen-body center-content">
+                <div class="loader"></div>
+                <p class="loader-text" id="loader-text">Загрузка...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Контейнер для анимации поцелуйчиков -->
+    <div id="kiss-container" aria-hidden="true"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
