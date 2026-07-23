@@ -46,13 +46,17 @@ async def startup():
 # ── API ────────────────────────────────────────────────
 
 @app.post("/api/quiz")
-async def create_quiz(title: str = Form(...), creator_id: int = Form(0)):
+async def create_quiz(
+    title: str = Form(...),
+    creator_id: int = Form(0),
+    punishment_type: str = Form("kiss"),
+):
     if not title.strip():
         raise HTTPException(400, "Название не может быть пустым")
     code = generate_code()
     while await db.get_quiz_by_code(code):
         code = generate_code()
-    quiz_id = await db.create_quiz(title.strip(), creator_id, code)
+    quiz_id = await db.create_quiz(title.strip(), creator_id, code, punishment_type)
     return {"id": quiz_id, "code": code}
 
 
@@ -94,6 +98,7 @@ async def get_quiz(code: str):
         "title": quiz["title"],
         "code": quiz["code"],
         "creator_id": quiz["creator_id"],
+        "punishment_type": quiz.get("punishment_type") or "kiss",
         "questions": [
             {
                 "id": q["id"],

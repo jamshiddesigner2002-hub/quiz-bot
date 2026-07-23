@@ -276,6 +276,45 @@ body {
     margin-bottom: 20px;
 }
 
+.punishment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.punishment-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.punishment-card:active {
+    transform: scale(0.96);
+}
+
+.punishment-card.selected {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(255,107,157,0.15), rgba(102,126,234,0.15));
+    box-shadow: 0 0 16px rgba(255, 107, 157, 0.2);
+}
+
+.punishment-icon {
+    font-size: 28px;
+}
+
+.punishment-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
 .form-label {
     display: block;
     font-size: 14px;

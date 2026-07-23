@@ -59,12 +59,35 @@
             <div class="screen-body">
                 <div class="create-hero">
                     <span class="create-hero-emoji">✨</span>
-                    <p>Придумайте название для вашего теста</p>
+                    <p>Придумайте название и выберите «наказание» за ошибки</p>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Название</label>
-                    <input type="text" id="quiz-title" class="input" placeholder="Например: Столицы мира" maxlength="100">
+                    <input type="text" id="quiz-title" class="input" placeholder="Например: Как хорошо ты меня знаешь?" maxlength="100">
                 </div>
+
+                <div class="form-group">
+                    <label class="form-label">Наказание за ошибки</label>
+                    <div class="punishment-grid">
+                        <div class="punishment-card selected" data-type="kiss" onclick="selectPunishment(this)">
+                            <span class="punishment-icon">💋</span>
+                            <span class="punishment-name">Поцелуй</span>
+                        </div>
+                        <div class="punishment-card" data-type="hug" onclick="selectPunishment(this)">
+                            <span class="punishment-icon">🫂</span>
+                            <span class="punishment-name">Обнимашки</span>
+                        </div>
+                        <div class="punishment-card" data-type="cheek" onclick="selectPunishment(this)">
+                            <span class="punishment-icon">😚</span>
+                            <span class="punishment-name">В щёчку</span>
+                        </div>
+                        <div class="punishment-card" data-type="lift" onclick="selectPunishment(this)">
+                            <span class="punishment-icon">💑</span>
+                            <span class="punishment-name">На руки</span>
+                        </div>
+                    </div>
+                </div>
+
                 <button class="btn btn-primary full-width" onclick="createQuiz()">
                     Далее <span class="btn-arrow">→</span>
                 </button>

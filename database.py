@@ -13,9 +13,16 @@ async def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 creator_id INTEGER NOT NULL,
-                code TEXT UNIQUE NOT NULL
+                code TEXT UNIQUE NOT NULL,
+                punishment_type TEXT DEFAULT 'kiss'
             )
         """)
+        # Безопасно добавляем колонку punishment_type если база уже существовала
+        try:
+            await db.execute("ALTER TABLE quizzes ADD COLUMN punishment_type TEXT DEFAULT 'kiss'")
+        except Exception:
+            pass  # Колонка уже есть
+
         await db.execute("""
             CREATE TABLE IF NOT EXISTS questions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,12 +51,12 @@ async def init_db():
 
 # ── Тесты ──────────────────────────────────────────────
 
-async def create_quiz(title: str, creator_id: int, code: str) -> int:
+async def create_quiz(title: str, creator_id: int, code: str, punishment_type: str = "kiss") -> int:
     """Создаёт тест и возвращает его id."""
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
-            "INSERT INTO quizzes (title, creator_id, code) VALUES (?, ?, ?)",
-            (title, creator_id, code),
+            "INSERT INTO quizzes (title, creator_id, code, punishment_type) VALUES (?, ?, ?, ?)",
+            (title, creator_id, code, punishment_type),
         )
         await db.commit()
         return cursor.lastrowid

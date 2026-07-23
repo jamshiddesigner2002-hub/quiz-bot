@@ -26,6 +26,49 @@ let playCurrent = 0;
 let playWrongCount = 0;
 let playTotalKisses = 0;
 let playAnswered = false;
+let playPunishmentType = "kiss";
+let selectedPunishmentType = "kiss";
+
+const PUNISHMENTS = {
+    kiss: {
+        icon: "💋",
+        name: "поцелуй",
+        emojis: ["💋", "😘", "💕"],
+        plural: (n) => pluralizeWord(n, "поцелуйчик", "поцелуйчика", "поцелуйчиков"),
+        phrase: (n) => `Ты должен(а) ${n} ${pluralizeWord(n, "поцелуйчик", "поцелуйчика", "поцелуйчиков")}! 😘`
+    },
+    hug: {
+        icon: "🫂",
+        name: "обнимашка",
+        emojis: ["🫂", "🤗", "💖"],
+        plural: (n) => pluralizeWord(n, "обнимашку", "обнимашки", "обнимашек"),
+        phrase: (n) => `Ты должен(а) ${n} ${pluralizeWord(n, "обнимашку", "обнимашки", "обнимашек")}! 🫂`
+    },
+    cheek: {
+        icon: "😚",
+        name: "поцелуй в щёчку",
+        emojis: ["😚", "😽", "💖"],
+        plural: (n) => pluralizeWord(n, "поцелуй в щёчку", "поцелуя в щёчку", "поцелуев в щёчку"),
+        phrase: (n) => `Ты должен(а) ${n} ${pluralizeWord(n, "поцелуй в щёчку", "поцелуя в щёчку", "поцелуев в щёчку")}! 😚`
+    },
+    lift: {
+        icon: "💑",
+        name: "поднять на руки",
+        emojis: ["💑", "👩‍❤️‍👨", "✨"],
+        plural: (n) => pluralizeWord(n, "поднятие на руки", "поднятия на руки", "поднятий на руки"),
+        phrase: (n) => `Ты должен(а) поднять на руки ${n} ${pluralizeWord(n, "раз", "раза", "раз")}! 💑`
+    }
+};
+
+function getPunishment(type) {
+    return PUNISHMENTS[type] || PUNISHMENTS.kiss;
+}
+
+function selectPunishment(el) {
+    document.querySelectorAll(".punishment-card").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    selectedPunishmentType = el.dataset.type || "kiss";
+}
 
 // ── SVG gradient for result circle ──
 (function addSvgDefs() {
@@ -107,6 +150,7 @@ async function createQuiz() {
         const form = new FormData();
         form.append("title", title);
         form.append("creator_id", tgUser?.id || 0);
+        form.append("punishment_type", selectedPunishmentType);
 
         const res = await fetch("/api/quiz", { method: "POST", body: form });
         const data = await res.json();
@@ -373,6 +417,7 @@ async function loadQuizByCode(code) {
 
         playQuiz = data;
         playQuestions = data.questions;
+        playPunishmentType = data.punishment_type || "kiss";
         playCurrent = 0;
         playWrongCount = 0;
         playTotalKisses = 0;
@@ -397,9 +442,13 @@ function renderQuestion() {
 
     // Progress
     const pct = (playCurrent / total) * 100;
+    const pConfig = getPunishment(playPunishmentType);
     document.getElementById("progress-fill").style.width = pct + "%";
     document.getElementById("play-counter").textContent = `${playCurrent + 1} / ${total}`;
-    document.getElementById("kiss-count").textContent = playTotalKisses;
+    const kissBadge = document.querySelector(".kiss-badge");
+    if (kissBadge) {
+        kissBadge.innerHTML = `${pConfig.icon} <span id="kiss-count">${playTotalKisses}</span>`;
+    }
 
     // Question
     const photoEl = document.getElementById("play-photo");
@@ -456,7 +505,7 @@ function handleAnswer(selectedIndex) {
         card.classList.add("shake");
 
         // Kiss animation
-        createKissRain(kissesAdded);
+        createKissRain(kissesAdded, pConfig.emojis);
 
         // Update counter
         document.getElementById("kiss-count").textContent = playTotalKisses;
@@ -479,12 +528,13 @@ function showAnswerOverlay(isCorrect, question, kissesAdded) {
             <p class="overlay-subtitle">${question.options[question.correct_index]}</p>
         `;
     } else {
+        const pConfig = getPunishment(playPunishmentType);
         content.innerHTML = `
             <span class="overlay-emoji">❌</span>
             <p class="overlay-title" style="color: var(--error)">Неправильно!</p>
             <p class="overlay-subtitle">Попробуй ещё раз! 🤔</p>
-            <p class="overlay-kisses">💋 +${kissesAdded} поцелуйчик${pluralKiss(kissesAdded)}</p>
-            <p class="overlay-subtitle">Всего: ${playTotalKisses} 💋</p>
+            <p class="overlay-kisses">${pConfig.icon} +${kissesAdded} ${pConfig.plural(kissesAdded)}</p>
+            <p class="overlay-subtitle">Всего: ${playTotalKisses} ${pConfig.icon}</p>
         `;
     }
 
@@ -540,16 +590,18 @@ function showResults() {
     else if (pct >= 0.5) titleEl.textContent = "😐 Неплохо";
     else titleEl.textContent = "😅 Можно лучше!";
 
-    // Kisses
+    // Kisses / Punishment Result
     const kissCard = document.getElementById("kiss-result-card");
+    const pConfig = getPunishment(playPunishmentType);
     if (playWrongCount > 0) {
         kissCard.hidden = false;
+        const iconEl = document.querySelector(".kiss-big-icon");
+        if (iconEl) iconEl.textContent = pConfig.icon;
         document.getElementById("result-kisses").textContent = playTotalKisses;
-        document.getElementById("kiss-result-text").textContent =
-            `Ты должен(а) ${playTotalKisses} поцелуйчик${pluralKiss(playTotalKisses)}! 😘`;
+        document.getElementById("kiss-result-text").textContent = pConfig.phrase(playTotalKisses);
 
         // Kiss rain celebration
-        setTimeout(() => createKissRain(Math.min(playTotalKisses, 30)), 800);
+        setTimeout(() => createKissRain(Math.min(playTotalKisses, 30), pConfig.emojis), 800);
     } else {
         kissCard.hidden = true;
     }
@@ -637,9 +689,8 @@ async function deleteQuiz(id) {
 //  KISS ANIMATION
 // ═══════════════════════════════════════════════════════
 
-function createKissRain(count) {
+function createKissRain(count, emojis = ["💋", "😘", "💕"]) {
     const container = document.getElementById("kiss-container");
-    const emojis = ["💋", "😘", "💕"];
     const maxKisses = Math.min(count, 40);
 
     for (let i = 0; i < maxKisses; i++) {
@@ -668,13 +719,13 @@ function factorial(n) {
     return result;
 }
 
-function pluralKiss(n) {
+function pluralizeWord(n, one, two, many) {
     const mod10 = n % 10;
     const mod100 = n % 100;
-    if (mod100 >= 11 && mod100 <= 19) return "ов";
-    if (mod10 === 1) return "";
-    if (mod10 >= 2 && mod10 <= 4) return "а";
-    return "ов";
+    if (mod100 >= 11 && mod100 <= 19) return many;
+    if (mod10 === 1) return one;
+    if (mod10 >= 2 && mod10 <= 4) return two;
+    return many;
 }
 
 function escapeHtml(str) {
