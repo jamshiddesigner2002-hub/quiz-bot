@@ -82,6 +82,10 @@ async def cmd_start(message: Message):
             text="📋 Мои тесты",
             web_app=WebAppInfo(url=f"{webapp_url}?mode=my"),
         )],
+        [InlineKeyboardButton(
+            text="💳 Долги & Счёты",
+            web_app=WebAppInfo(url=f"{webapp_url}?mode=debts"),
+        )],
     ])
 
     await message.answer(

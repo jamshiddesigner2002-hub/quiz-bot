@@ -117,6 +117,8 @@ function selectPunishment(el) {
         showScreen("code");
     } else if (mode === "my") {
         loadMyQuizzes();
+    } else if (mode === "debts") {
+        loadDebts();
     }
     // else: show home (default)
 })();
