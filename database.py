@@ -14,14 +14,17 @@ async def init_db():
                 title TEXT NOT NULL,
                 creator_id INTEGER NOT NULL,
                 code TEXT UNIQUE NOT NULL,
-                punishment_type TEXT DEFAULT 'kiss'
+                punishment_type TEXT DEFAULT 'kiss',
+                custom_emoji TEXT,
+                custom_name TEXT
             )
         """)
-        # Безопасно добавляем колонку punishment_type если база уже существовала
-        try:
-            await db.execute("ALTER TABLE quizzes ADD COLUMN punishment_type TEXT DEFAULT 'kiss'")
-        except Exception:
-            pass  # Колонка уже есть
+        # Безопасно добавляем новые колонки если база уже существовала
+        for col in [("punishment_type", "TEXT DEFAULT 'kiss'"), ("custom_emoji", "TEXT"), ("custom_name", "TEXT")]:
+            try:
+                await db.execute(f"ALTER TABLE quizzes ADD COLUMN {col[0]} {col[1]}")
+            except Exception:
+                pass  # Колонка уже есть
 
         await db.execute("""
             CREATE TABLE IF NOT EXISTS questions (
@@ -51,12 +54,19 @@ async def init_db():
 
 # ── Тесты ──────────────────────────────────────────────
 
-async def create_quiz(title: str, creator_id: int, code: str, punishment_type: str = "kiss") -> int:
+async def create_quiz(
+    title: str,
+    creator_id: int,
+    code: str,
+    punishment_type: str = "kiss",
+    custom_emoji: str = "",
+    custom_name: str = "",
+) -> int:
     """Создаёт тест и возвращает его id."""
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
-            "INSERT INTO quizzes (title, creator_id, code, punishment_type) VALUES (?, ?, ?, ?)",
-            (title, creator_id, code, punishment_type),
+            "INSERT INTO quizzes (title, creator_id, code, punishment_type, custom_emoji, custom_name) VALUES (?, ?, ?, ?, ?, ?)",
+            (title, creator_id, code, punishment_type, custom_emoji, custom_name),
         )
         await db.commit()
         return cursor.lastrowid

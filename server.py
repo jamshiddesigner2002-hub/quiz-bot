@@ -50,13 +50,17 @@ async def create_quiz(
     title: str = Form(...),
     creator_id: int = Form(0),
     punishment_type: str = Form("kiss"),
+    custom_emoji: str = Form(""),
+    custom_name: str = Form(""),
 ):
     if not title.strip():
         raise HTTPException(400, "Название не может быть пустым")
     code = generate_code()
     while await db.get_quiz_by_code(code):
         code = generate_code()
-    quiz_id = await db.create_quiz(title.strip(), creator_id, code, punishment_type)
+    quiz_id = await db.create_quiz(
+        title.strip(), creator_id, code, punishment_type, custom_emoji.strip(), custom_name.strip()
+    )
     return {"id": quiz_id, "code": code}
 
 
@@ -99,6 +103,8 @@ async def get_quiz(code: str):
         "code": quiz["code"],
         "creator_id": quiz["creator_id"],
         "punishment_type": quiz.get("punishment_type") or "kiss",
+        "custom_emoji": quiz.get("custom_emoji") or "",
+        "custom_name": quiz.get("custom_name") or "",
         "questions": [
             {
                 "id": q["id"],

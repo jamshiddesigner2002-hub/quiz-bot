@@ -85,6 +85,19 @@
                             <span class="punishment-icon">👩‍❤️‍👨</span>
                             <span class="punishment-name">На руки</span>
                         </div>
+                        <div class="punishment-card full-span" data-type="custom" onclick="selectPunishment(this)">
+                            <span class="punishment-icon">✨</span>
+                            <span class="punishment-name">Свой вариант</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Блок для своего варианта -->
+                <div class="form-group" id="custom-punishment-box" hidden>
+                    <label class="form-label">Настройка своего варианта</label>
+                    <div class="custom-punishment-row">
+                        <input type="text" id="custom-emoji" class="input emoji-input" placeholder="🔥 Эмодзи" maxlength="4">
+                        <input type="text" id="custom-name" class="input name-input" placeholder="Название (например: Шоколадка, Массаж)" maxlength="50">
                     </div>
                 </div>
 

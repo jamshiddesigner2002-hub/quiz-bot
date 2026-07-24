@@ -306,13 +306,28 @@ body {
     box-shadow: 0 0 16px rgba(255, 107, 157, 0.2);
 }
 
-.punishment-icon {
-    font-size: 28px;
+.punishment-card.full-span {
+    grid-column: span 2;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px;
 }
 
-.punishment-name {
-    font-size: 13px;
-    font-weight: 600;
+.custom-punishment-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.emoji-input {
+    width: 80px;
+    text-align: center;
+    font-size: 20px;
+}
+
+.name-input {
+    flex: 1;
 }
 
 .form-label {

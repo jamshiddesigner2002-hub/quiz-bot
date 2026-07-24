@@ -27,7 +27,8 @@ let playWrongCount = 0;
 let playTotalKisses = 0;
 let playAnswered = false;
 let playPunishmentType = "kiss";
-let selectedPunishmentType = "kiss";
+let playCustomEmoji = "";
+let playCustomName = "";
 
 const PUNISHMENTS = {
     kiss: {
@@ -60,7 +61,18 @@ const PUNISHMENTS = {
     }
 };
 
-function getPunishment(type) {
+function getPunishment(type, customEmoji = "", customName = "") {
+    if (type === "custom") {
+        const emoji = customEmoji || "✨";
+        const name = customName || "наказание";
+        return {
+            icon: emoji,
+            name: name,
+            emojis: [emoji, "✨", "💖"],
+            plural: (n) => `${name}`,
+            phrase: (n) => `Ты должен(а) ${name} — ${n} раз! ${emoji}`
+        };
+    }
     return PUNISHMENTS[type] || PUNISHMENTS.kiss;
 }
 
@@ -68,6 +80,11 @@ function selectPunishment(el) {
     document.querySelectorAll(".punishment-card").forEach(c => c.classList.remove("selected"));
     el.classList.add("selected");
     selectedPunishmentType = el.dataset.type || "kiss";
+
+    const box = document.getElementById("custom-punishment-box");
+    if (box) {
+        box.hidden = (selectedPunishmentType !== "custom");
+    }
 }
 
 // ── SVG gradient for result circle ──
@@ -151,6 +168,20 @@ async function createQuiz() {
         form.append("title", title);
         form.append("creator_id", tgUser?.id || 0);
         form.append("punishment_type", selectedPunishmentType);
+
+        if (selectedPunishmentType === "custom") {
+            const customEmoji = document.getElementById("custom-emoji").value.trim() || "✨";
+            const customName = document.getElementById("custom-name").value.trim();
+            if (!customName) {
+                const nameInp = document.getElementById("custom-name");
+                nameInp.focus();
+                shakeElement(nameInp);
+                showToast("Введите название своего наказания");
+                return;
+            }
+            form.append("custom_emoji", customEmoji);
+            form.append("custom_name", customName);
+        }
 
         const res = await fetch("/api/quiz", { method: "POST", body: form });
         const data = await res.json();
@@ -418,6 +449,8 @@ async function loadQuizByCode(code) {
         playQuiz = data;
         playQuestions = data.questions;
         playPunishmentType = data.punishment_type || "kiss";
+        playCustomEmoji = data.custom_emoji || "";
+        playCustomName = data.custom_name || "";
         playCurrent = 0;
         playWrongCount = 0;
         playTotalKisses = 0;
@@ -442,7 +475,7 @@ function renderQuestion() {
 
     // Progress
     const pct = (playCurrent / total) * 100;
-    const pConfig = getPunishment(playPunishmentType);
+    const pConfig = getPunishment(playPunishmentType, playCustomEmoji, playCustomName);
     document.getElementById("progress-fill").style.width = pct + "%";
     document.getElementById("play-counter").textContent = `${playCurrent + 1} / ${total}`;
     const kissBadge = document.querySelector(".kiss-badge");
@@ -505,6 +538,7 @@ function handleAnswer(selectedIndex) {
         card.classList.add("shake");
 
         // Kiss animation
+        const pConfig = getPunishment(playPunishmentType, playCustomEmoji, playCustomName);
         createKissRain(kissesAdded, pConfig.emojis);
 
         // Update counter
@@ -528,7 +562,7 @@ function showAnswerOverlay(isCorrect, question, kissesAdded) {
             <p class="overlay-subtitle">${question.options[question.correct_index]}</p>
         `;
     } else {
-        const pConfig = getPunishment(playPunishmentType);
+        const pConfig = getPunishment(playPunishmentType, playCustomEmoji, playCustomName);
         content.innerHTML = `
             <span class="overlay-emoji">❌</span>
             <p class="overlay-title" style="color: var(--error)">Неправильно!</p>
@@ -592,7 +626,7 @@ function showResults() {
 
     // Kisses / Punishment Result
     const kissCard = document.getElementById("kiss-result-card");
-    const pConfig = getPunishment(playPunishmentType);
+    const pConfig = getPunishment(playPunishmentType, playCustomEmoji, playCustomName);
     if (playWrongCount > 0) {
         kissCard.hidden = false;
         const iconEl = document.querySelector(".kiss-big-icon");
