@@ -414,7 +414,7 @@ function shareQuiz() {
         // Use Telegram share
         tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('🎯 Пройди мой тест "' + currentQuizTitle + '"!\n💋 За ошибки — поцелуйчики!')}`);
     } else if (navigator.share) {
-        navigator.share({ title: "Quiz Kiss 💋", text: text, url: link });
+        navigator.share({ title: "Quiz 🎯", text: text, url: link });
     } else {
         copyLink();
     }

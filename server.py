@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 
 import database as db
 
-app = FastAPI(title="Quiz Kiss API")
+app = FastAPI(title="Quiz API")
 
 app.add_middleware(
     CORSMiddleware,
