@@ -49,7 +49,43 @@ async def init_db():
                 FOREIGN KEY (quiz_id) REFERENCES quizzes(id)
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY
+            )
+        """)
         await db.commit()
+
+
+# ── Пользователи ───────────────────────────────────────
+
+async def register_user(user_id: int):
+    """Регистрирует user_id если ещё нет."""
+    if not user_id:
+        return
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("INSERT OR IGNORE INTO users (user_id) VALUES (?)", (user_id,))
+        await db.commit()
+
+
+async def get_all_user_ids() -> list[int]:
+    """Возвращает список всех ID пользователей для рассылки."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT user_id FROM users")
+        rows = await cursor.fetchall()
+        users = [r[0] for r in rows]
+
+        cursor = await db.execute("SELECT DISTINCT creator_id FROM quizzes WHERE creator_id > 0")
+        rows = await cursor.fetchall()
+        for r in rows:
+            users.append(r[0])
+
+        cursor = await db.execute("SELECT DISTINCT user_id FROM sessions WHERE user_id > 0")
+        rows = await cursor.fetchall()
+        for r in rows:
+            users.append(r[0])
+
+        return list(set(users))
 
 
 # ── Тесты ──────────────────────────────────────────────

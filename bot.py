@@ -41,6 +41,9 @@ def get_webapp_url() -> str:
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
+    if message.from_user:
+        await db.register_user(message.from_user.id)
+
     webapp_url = get_webapp_url()
     args = message.text.split()
 
@@ -85,11 +88,43 @@ async def cmd_start(message: Message):
         "👋 Привет! Я бот для создания тестов!\n\n"
         "📝 <b>Создай тест</b> с фото и вариантами\n"
         "🎯 <b>Пройди тест</b> друга по коду\n"
-        "💋 За каждую ошибку — поцелуйчики!\n\n"
+        "💋 Выбирай или создавай свои наказания за ошибки!\n\n"
         "Выбери действие 👇",
         parse_mode="HTML",
         reply_markup=kb,
     )
+
+
+@router.message(Command("broadcast"))
+async def cmd_broadcast(message: Message):
+    text = message.text.replace("/broadcast", "").strip()
+    if not text:
+        text = (
+            "🎉 <b>ОБНОВЛЕНИЕ БОТА!</b>\n\n"
+            "✨ В боте появились новые супер-функции:\n"
+            "• Выбирай готовые наказания (Поцелуи 💋, Обнимашки 🫂, В щёчку 😚, На руки 👩‍❤️‍👨)\n"
+            "• Создавай <b>СВОЙ ВАРИАНТ</b> со своим эмодзи и названием!\n\n"
+            "Нажми «📝 Создать тест» чтобы попробовать! 👇"
+        )
+
+    users = await db.get_all_user_ids()
+    webapp_url = get_webapp_url()
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📝 Создать тест",
+            web_app=WebAppInfo(url=f"{webapp_url}?mode=create"),
+        )],
+    ])
+
+    sent = 0
+    for uid in users:
+        try:
+            await bot.send_message(uid, text, parse_mode="HTML", reply_markup=kb)
+            sent += 1
+        except Exception:
+            pass
+
+    await message.answer(f"📢 Уведомления об обновлении отправлены ({sent} пользователей)!")
 
 
 async def start_bot():
