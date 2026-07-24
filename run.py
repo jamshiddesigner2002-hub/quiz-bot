@@ -76,6 +76,8 @@ async def main():
 
     if render_url:
         # На Render — URL уже есть (HTTPS)
+        if not render_url.startswith("http://") and not render_url.startswith("https://"):
+            render_url = "https://" + render_url
         webapp_url = render_url
         logger.info(f"☁️ Render.com обнаружен: {webapp_url}")
     else:
@@ -99,6 +101,12 @@ async def main():
     import database as db
 
     await db.init_db()
+
+    # Очищаем старые вебхуки для стабильного отклика бота
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+    except Exception as e:
+        logger.warning(f"delete_webhook error: {e}")
 
     # ── Запуск ─────────────────────────────────────────
     config = uvicorn.Config(

@@ -35,14 +35,20 @@ logger = logging.getLogger(__name__)
 
 
 def get_webapp_url() -> str:
-    """Берёт URL из переменной окружения (устанавливается в run.py через ngrok)."""
-    return os.environ.get("WEBAPP_URL", os.getenv("WEBAPP_URL", "http://localhost:8080"))
+    """Возвращает валидный HTTPS URL сервиса."""
+    url = os.environ.get("WEBAPP_URL") or os.getenv("RENDER_EXTERNAL_URL") or os.getenv("WEBAPP_URL") or ""
+    if url and not url.startswith("http://") and not url.startswith("https://"):
+        url = "https://" + url
+    return url or "https://quiz-bot-ik7z.onrender.com"
 
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     if message.from_user:
-        await db.register_user(message.from_user.id)
+        try:
+            await db.register_user(message.from_user.id)
+        except Exception as e:
+            logger.warning(f"User registration skipped: {e}")
 
     webapp_url = get_webapp_url()
     args = message.text.split()
