@@ -29,6 +29,7 @@ let playAnswered = false;
 let playPunishmentType = "kiss";
 let playCustomEmoji = "";
 let playCustomName = "";
+let selectedPunishmentType = "kiss";
 
 const PUNISHMENTS = {
     kiss: {
