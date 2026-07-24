@@ -157,11 +157,26 @@ function showLoading(text = "Загрузка...") {
 
 async function createQuiz() {
     const titleEl = document.getElementById("quiz-title");
-    const title = titleEl.value.trim();
+    const title = titleEl ? titleEl.value.trim() : "";
     if (!title) {
-        titleEl.focus();
-        shakeElement(titleEl);
+        if (titleEl) {
+            titleEl.focus();
+            shakeElement(titleEl);
+        }
         return;
+    }
+
+    if (typeof selectedPunishmentType !== "undefined" && selectedPunishmentType === "custom") {
+        const nameInp = document.getElementById("custom-name");
+        const customName = nameInp ? nameInp.value.trim() : "";
+        if (!customName) {
+            if (nameInp) {
+                nameInp.focus();
+                shakeElement(nameInp);
+            }
+            showToast("Введите название своего наказания");
+            return;
+        }
     }
 
     showLoading("Создаём тест...");
@@ -170,23 +185,23 @@ async function createQuiz() {
         const form = new FormData();
         form.append("title", title);
         form.append("creator_id", tgUser?.id || 0);
-        form.append("punishment_type", selectedPunishmentType);
+        const pType = (typeof selectedPunishmentType !== "undefined") ? selectedPunishmentType : "kiss";
+        form.append("punishment_type", pType);
 
-        if (selectedPunishmentType === "custom") {
-            const customEmoji = document.getElementById("custom-emoji").value.trim() || "✨";
-            const customName = document.getElementById("custom-name").value.trim();
-            if (!customName) {
-                const nameInp = document.getElementById("custom-name");
-                nameInp.focus();
-                shakeElement(nameInp);
-                showToast("Введите название своего наказания");
-                return;
-            }
+        if (pType === "custom") {
+            const emojiInp = document.getElementById("custom-emoji");
+            const nameInp = document.getElementById("custom-name");
+            const customEmoji = (emojiInp && emojiInp.value.trim()) ? emojiInp.value.trim() : "✨";
+            const customName = nameInp ? nameInp.value.trim() : "";
             form.append("custom_emoji", customEmoji);
             form.append("custom_name", customName);
         }
 
         const res = await fetch("/api/quiz", { method: "POST", body: form });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || "Ошибка сервера");
+        }
         const data = await res.json();
 
         currentQuizId = data.id;
