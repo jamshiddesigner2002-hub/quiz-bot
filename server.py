@@ -148,6 +148,62 @@ async def delete_quiz_endpoint(quiz_id: int):
     return {"ok": True}
 
 
+# ── Долги ──────────────────────────────────────────────
+
+@app.post("/api/debt/record")
+async def record_debt_endpoint(
+    quiz_id: int = Form(...),
+    debtor_id: int = Form(...),
+    debtor_name: str = Form("Аноним"),
+    amount: int = Form(...),
+):
+    # Получаем инфо о тесте
+    async with aiosqlite.connect(db.DB_PATH) as database:
+        database.row_factory = aiosqlite.Row
+        cursor = await database.execute("SELECT * FROM quizzes WHERE id = ?", (quiz_id,))
+        row = await cursor.fetchone()
+        if not row:
+            raise HTTPException(404, "Тест не найден")
+        quiz = dict(row)
+
+    await db.record_debt(
+        quiz_id=quiz["id"],
+        quiz_title=quiz["title"],
+        creator_id=quiz["creator_id"],
+        debtor_id=debtor_id,
+        debtor_name=debtor_name.strip() or "Друг",
+        punishment_type=quiz.get("punishment_type") or "kiss",
+        custom_emoji=quiz.get("custom_emoji") or "",
+        custom_name=quiz.get("custom_name") or "",
+        amount=amount,
+    )
+    return {"ok": True}
+
+
+@app.get("/api/debts/to-me/{creator_id}")
+async def get_debts_to_me(creator_id: int):
+    debts = await db.get_debts_for_creator(creator_id)
+    return debts
+
+
+@app.get("/api/debts/i-owe/{debtor_id}")
+async def get_debts_i_owe(debtor_id: int):
+    debts = await db.get_debts_for_debtor(debtor_id)
+    return debts
+
+
+@app.post("/api/debt/{debt_id}/decrease")
+async def decrease_debt_endpoint(debt_id: int):
+    debt = await db.decrease_debt(debt_id, 1)
+    return {"ok": True, "debt": debt}
+
+
+@app.delete("/api/debt/{debt_id}")
+async def delete_debt_endpoint(debt_id: int):
+    await db.delete_debt(debt_id)
+    return {"ok": True}
+
+
 # ── Health check (для Render и мониторинга) ────────────
 
 @app.get("/health")

@@ -50,10 +50,100 @@ async def init_db():
             )
         """)
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY
+            CREATE TABLE IF NOT EXISTS debts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quiz_id INTEGER NOT NULL,
+                quiz_title TEXT NOT NULL,
+                creator_id INTEGER NOT NULL,
+                debtor_id INTEGER NOT NULL,
+                debtor_name TEXT NOT NULL,
+                punishment_type TEXT NOT NULL,
+                custom_emoji TEXT,
+                custom_name TEXT,
+                amount INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
             )
         """)
+        await db.commit()
+
+
+# ── Долги ──────────────────────────────────────────────
+
+async def record_debt(
+    quiz_id: int,
+    quiz_title: str,
+    creator_id: int,
+    debtor_id: int,
+    debtor_name: str,
+    punishment_type: str,
+    custom_emoji: str,
+    custom_name: str,
+    amount: int,
+):
+    """Записывает новый долг за тест."""
+    if amount <= 0:
+        return
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO debts
+            (quiz_id, quiz_title, creator_id, debtor_id, debtor_name, punishment_type, custom_emoji, custom_name, amount)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (quiz_id, quiz_title, creator_id, debtor_id, debtor_name, punishment_type, custom_emoji, custom_name, amount),
+        )
+        await db.commit()
+
+
+async def get_debts_for_creator(creator_id: int) -> list[dict]:
+    """Возвращает список долгов (кто должен этому пользователю)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM debts WHERE creator_id = ? AND amount > 0 ORDER BY id DESC",
+            (creator_id,),
+        )
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
+
+async def get_debts_for_debtor(debtor_id: int) -> list[dict]:
+    """Возвращает список долгов (кому должен этот пользователь)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM debts WHERE debtor_id = ? AND amount > 0 ORDER BY id DESC",
+            (debtor_id,),
+        )
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
+
+async def decrease_debt(debt_id: int, count: int = 1) -> dict | None:
+    """Уменьшает долг на count штук. Если стал <= 0, удаляет."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM debts WHERE id = ?", (debt_id,))
+        row = await cursor.fetchone()
+        if not row:
+            return None
+        debt = dict(row)
+        new_amount = debt["amount"] - count
+        if new_amount <= 0:
+            await db.execute("DELETE FROM debts WHERE id = ?", (debt_id,))
+            debt["amount"] = 0
+        else:
+            await db.execute("UPDATE debts SET amount = ? WHERE id = ?", (new_amount, debt_id))
+            debt["amount"] = new_amount
+        await db.commit()
+        return debt
+
+
+async def delete_debt(debt_id: int):
+    """Полностью списывает/удаляет долг."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM debts WHERE id = ?", (debt_id,))
         await db.commit()
 
 

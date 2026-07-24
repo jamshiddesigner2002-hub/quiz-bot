@@ -43,6 +43,13 @@
                         </div>
                         <span class="card-btn-arrow">→</span>
                     </button>
+                    <button class="card-btn secondary" onclick="loadDebts()">
+                        <span class="card-btn-icon">💳</span>
+                        <div class="card-btn-info">
+                            <span class="card-btn-title">Долги & Счёты</span>
+                        </div>
+                        <span class="card-btn-arrow">→</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -272,6 +279,24 @@
             </div>
         </div>
 
+        <!-- ═══ Долги & Счёты ═══ -->
+        <div id="screen-debts" class="screen">
+            <div class="screen-header">
+                <button class="back-btn" onclick="showScreen('home')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <h2>Долги & Счёты</h2>
+                <div class="header-spacer"></div>
+            </div>
+            <div class="screen-body">
+                <div class="debts-tabs">
+                    <button class="debts-tab active" id="tab-to-me" onclick="switchDebtsTab('to-me')">Мне должны</button>
+                    <button class="debts-tab" id="tab-i-owe" onclick="switchDebtsTab('i-owe')">Я должен(а)</button>
+                </div>
+                <div id="debts-list" class="debts-list"></div>
+            </div>
+        </div>
+
         <!-- ═══ Загрузка ═══ -->
         <div id="screen-loading" class="screen">
             <div class="screen-body center-content">
@@ -285,6 +310,6 @@
     <!-- Контейнер для анимации поцелуйчиков -->
     <div id="kiss-container" aria-hidden="true"></div>
 
-    <script src="/static/app.js?v=1000"></script>
+    <script src="/static/app.js?v=1001"></script>
 </body>
 </html>

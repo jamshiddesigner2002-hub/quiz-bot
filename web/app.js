@@ -634,6 +634,17 @@ function showResults() {
         document.getElementById("result-kisses").textContent = playTotalKisses;
         document.getElementById("kiss-result-text").textContent = pConfig.phrase(playTotalKisses);
 
+        // Record debt in database
+        if (playQuiz) {
+            const form = new FormData();
+            form.append("quiz_id", playQuiz.id);
+            form.append("debtor_id", tgUser?.id || 0);
+            const debtorName = (tgUser?.first_name ? (tgUser.first_name + (tgUser.last_name ? " " + tgUser.last_name : "")) : "Друг");
+            form.append("debtor_name", debtorName);
+            form.append("amount", playTotalKisses);
+            fetch("/api/debt/record", { method: "POST", body: form }).catch(() => {});
+        }
+
         // Kiss rain celebration
         setTimeout(() => createKissRain(Math.min(playTotalKisses, 30), pConfig.emojis), 800);
     } else {
@@ -716,6 +727,132 @@ async function deleteQuiz(id) {
         showToast("🗑 Тест удалён");
     } catch (e) {
         showToast("Ошибка");
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+//  DEBTS & ACCOUNTS
+// ═══════════════════════════════════════════════════════
+
+let currentDebtsTab = "to-me";
+
+function switchDebtsTab(tab) {
+    currentDebtsTab = tab;
+    document.getElementById("tab-to-me").classList.toggle("active", tab === "to-me");
+    document.getElementById("tab-i-owe").classList.toggle("active", tab === "i-owe");
+    loadDebts();
+}
+
+async function loadDebts() {
+    showLoading("Загружаем долги...");
+
+    const userId = tgUser?.id || 0;
+    const endpoint = currentDebtsTab === "to-me"
+        ? `/api/debts/to-me/${userId}`
+        : `/api/debts/i-owe/${userId}`;
+
+    try {
+        const res = await fetch(endpoint);
+        const debts = await res.json();
+        renderDebts(debts);
+        showScreen("debts");
+    } catch (e) {
+        showToast("Ошибка загрузки: " + e.message);
+        showScreen("home");
+    }
+}
+
+function renderDebts(debts) {
+    const list = document.getElementById("debts-list");
+
+    if (!debts || !debts.length) {
+        const emptyMsg = currentDebtsTab === "to-me"
+            ? "Вам пока никто ничего не должен 😊"
+            : "Вы никому ничего не должны 🎉";
+        list.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-state-emoji">💳</span>
+                <p>${emptyMsg}</p>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = debts.map(d => {
+        const pConfig = getPunishment(d.punishment_type, d.custom_emoji, d.custom_name);
+        const actions = currentDebtsTab === "to-me" ? `
+            <div class="debt-actions">
+                <button class="debt-btn" onclick="decreaseDebtItem(${d.id})" title="Уменьшить на 1">➖ 1</button>
+                <button class="debt-btn danger" onclick="deleteDebtItem(${d.id})" title="Списать полностью">🗑 Списать</button>
+            </div>
+        ` : `
+            <div class="debt-actions">
+                <button class="debt-btn danger" onclick="deleteDebtItem(${d.id})" title="Оплачено">✅ Оплатить</button>
+            </div>
+        `;
+
+        const nameLabel = currentDebtsTab === "to-me"
+            ? `👤 <b>${escapeHtml(d.debtor_name)}</b>`
+            : `📌 Тест: <b>${escapeHtml(d.quiz_title)}</b>`;
+
+        return `
+            <div class="debt-card" id="debt-card-${d.id}">
+                <div class="debt-info">
+                    <div class="debt-name">${nameLabel}</div>
+                    <div class="debt-quiz">Тест «${escapeHtml(d.quiz_title)}»</div>
+                    <div class="debt-amount" id="debt-amount-${d.id}">
+                        ${pConfig.icon} <span id="debt-val-${d.id}">${d.amount}</span> ${pConfig.plural(d.amount)}
+                    </div>
+                </div>
+                ${actions}
+            </div>
+        `;
+    }).join("");
+}
+
+async function decreaseDebtItem(id) {
+    try {
+        const res = await fetch(`/api/debt/${id}/decrease`, { method: "POST" });
+        const data = await res.json();
+        if (data.ok && data.debt) {
+            const newAmount = data.debt.amount;
+            if (newAmount <= 0) {
+                removeDebtCardAnim(id);
+            } else {
+                const valEl = document.getElementById("debt-val-" + id);
+                if (valEl) valEl.textContent = newAmount;
+            }
+            showToast("➖ Уменьшено на 1");
+        }
+    } catch (e) {
+        showToast("Ошибка");
+    }
+}
+
+async function deleteDebtItem(id) {
+    if (!confirm("Списать этот долг?")) return;
+    try {
+        await fetch(`/api/debt/${id}`, { method: "DELETE" });
+        removeDebtCardAnim(id);
+        showToast("✅ Долг списан!");
+    } catch (e) {
+        showToast("Ошибка");
+    }
+}
+
+function removeDebtCardAnim(id) {
+    const el = document.getElementById("debt-card-" + id);
+    if (el) {
+        el.style.transition = "all 0.3s ease";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(30px)";
+        setTimeout(() => {
+            el.remove();
+            const list = document.getElementById("debts-list");
+            if (list && !list.children.length) {
+                renderDebts([]);
+            }
+        }, 300);
     }
 }
 
